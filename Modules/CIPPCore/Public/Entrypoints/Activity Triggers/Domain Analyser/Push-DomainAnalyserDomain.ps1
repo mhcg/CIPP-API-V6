@@ -6,7 +6,7 @@ function Push-DomainAnalyserDomain {
     param($Item)
     $DomainTable = Get-CippTable -tablename 'Domains'
     $Filter = "PartitionKey eq 'TenantDomains' and RowKey eq '{0}'" -f $Item.RowKey
-    $DomainObject = Get-CIPPAzDataTableEntity @DomainTable -Filter $Filter | Select-Object * -ExcludeProperty table
+    $DomainObject = Get-CIPPAzDataTableEntity @DomainTable -Filter $Filter
 
     try {
         $ConfigTable = Get-CippTable -tablename Config
@@ -35,7 +35,7 @@ function Push-DomainAnalyserDomain {
     try {
         $Tenant = $DomainObject.TenantDetails | ConvertFrom-Json -ErrorAction Stop
     } catch {
-        $Tenant = @{ Tenant = 'None' }
+        $Tenant = @{Tenant = 'None' }
     }
 
     $Result = [PSCustomObject]@{
@@ -124,6 +124,7 @@ function Push-DomainAnalyserDomain {
     } catch {
         $Message = 'SPF Error'
         Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message $Message -LogData (Get-CippException -Exception $_) -sev Error
+        return $Message
     }
 
     # Check SPF Record
@@ -186,7 +187,7 @@ function Push-DomainAnalyserDomain {
     } catch {
         $Message = 'DMARC Error'
         Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message $Message -LogData (Get-CippException -Exception $_) -sev Error
-        #return $Message
+        return $Message
     }
 
     # DNS Sec Check
@@ -204,7 +205,7 @@ function Push-DomainAnalyserDomain {
     } catch {
         $Message = 'DNSSEC Error'
         Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message $Message -LogData (Get-CippException -Exception $_) -sev Error
-        #return $Message
+        return $Message
     }
 
     # DKIM Check
@@ -239,7 +240,7 @@ function Push-DomainAnalyserDomain {
     } catch {
         $Message = 'DKIM Exception'
         Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message $Message -LogData (Get-CippException -Exception $_) -sev Error
-        #return $Message
+        return $Message
     }
 
     # Get Microsoft DKIM CNAME selector Records
@@ -255,15 +256,12 @@ function Push-DomainAnalyserDomain {
                 continue
             }
             # Test if there are already MSCNAME values set, skip domain if there is
-            if ($null -ne $DomainObject.DomainAnalyser) {
-                $CurrentMSCNAMEInfo = ConvertFrom-Json $DomainObject.DomainAnalyser -Depth 10
-                if (![string]::IsNullOrWhiteSpace($CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors.selector1.Value) -and
-                    ![string]::IsNullOrWhiteSpace($CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors.selector2.Value)) {
-                    $Result.MSCNAMEDKIMSelectors = $CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors
-                    continue
-                }
+            $CurrentMSCNAMEInfo = ConvertFrom-Json $DomainObject.DomainAnalyser -Depth 10
+            if (![string]::IsNullOrWhiteSpace($CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors.selector1.Value) -and
+                ![string]::IsNullOrWhiteSpace($CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors.selector2.Value)) {
+                $Result.MSCNAMEDKIMSelectors = $CurrentMSCNAMEInfo.MSCNAMEDKIMSelectors
+                continue
             }
-
 
             # Compute the DKIM CNAME records from $Tenant.InitialDomainName according to this logic: https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure#syntax-for-dkim-cname-records
             # Test if it has a - in the domain name
@@ -300,8 +298,9 @@ function Push-DomainAnalyserDomain {
             }
             $Result.MSCNAMEDKIMSelectors = $MSCNAMERecords
         } catch {
-            $ErrorMessage = Get-CippException -Exception $_
-            Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message "MS CNAME DKIM error: $($ErrorMessage.NormalizedError)" -LogData $ErrorMessage -sev Error
+            $Message = 'MS DKIM CNAME Error'
+            Write-LogMessage -API 'DomainAnalyser' -tenant $DomainObject.TenantId -message $Message -LogData (Get-CippException -Exception $_) -sev Error
+            return $Message
         }
     }
 
@@ -310,13 +309,7 @@ function Push-DomainAnalyserDomain {
     $Result.ScorePercentage = [int](($Result.Score / $Result.MaximumScore) * 100)
     $Result.ScoreExplanation = ($ScoreExplanation) -join ', '
 
-    $Json = (ConvertTo-Json -InputObject $Result -Depth 5 -Compress).ToString()
-
-    if ($DomainObject.PSObject.Properties.Name -notcontains 'DomainAnalyser') {
-        $DomainObject | Add-Member -MemberType NoteProperty -Name DomainAnalyser -Value $Json
-    } else {
-        $DomainObject.DomainAnalyser = $Json
-    }
+    $DomainObject.DomainAnalyser = (ConvertTo-Json -InputObject $Result -Depth 5 -Compress).ToString()
 
     try {
         $DomainTable.Entity = $DomainObject

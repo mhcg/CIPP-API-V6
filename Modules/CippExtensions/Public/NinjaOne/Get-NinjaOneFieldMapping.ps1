@@ -66,7 +66,7 @@ function Get-NinjaOneFieldMapping {
                 IntegrationId   = $_.NinjaOne
                 IntegrationName = $_.NinjaOneName
             }
-            Remove-AzDataTableEntity -Force @CIPPMapping -Entity $_
+            Remove-AzDataTableEntity @CIPPMapping -Entity $_
         }
         if (($MappingFieldMigrate | Measure-Object).count -gt 0) {
             Add-CIPPAzDataTableEntity @CIPPMapping -Entity $MappingFieldMigrate -Force
@@ -102,7 +102,7 @@ function Get-NinjaOneFieldMapping {
 
     } catch {
         [System.Collections.Generic.List[object]]$NinjaCustomFieldsNode = @()
-        [System.Collections.Generic.List[object]]$NinjaCustomFieldsOrg = @()
+        [System.Collections.Generic.List[objecgt]]$NinjaCustomFieldsOrg = @()
     }
 
     $MappingObj = [PSCustomObject]@{

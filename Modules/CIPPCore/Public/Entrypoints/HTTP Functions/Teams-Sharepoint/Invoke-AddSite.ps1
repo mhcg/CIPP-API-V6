@@ -5,7 +5,7 @@ Function Invoke-AddSite {
     .FUNCTIONALITY
         Entrypoint
     .ROLE
-        Sharepoint.Site.ReadWrite
+        Teams.Group.ReadWrite
     #>
     [CmdletBinding()]
     param($Request, $TriggerMetadata)

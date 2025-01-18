@@ -12,13 +12,12 @@ function Get-AuthorisedRequest {
     if (!$TenantID) {
         $TenantID = $env:TenantID
     }
-
-    if ($Uri -like 'https://graph.microsoft.com/beta/contracts*' -or $Uri -like '*/customers/*' -or $Uri -eq 'https://graph.microsoft.com/v1.0/me/sendMail' -or $Uri -like '*/tenantRelationships/*' -or $Uri -like '*/security/partner/*') {
+    if ($Uri -like 'https://graph.microsoft.com/beta/contracts*' -or $Uri -like '*/customers/*' -or $Uri -eq 'https://graph.microsoft.com/v1.0/me/sendMail' -or $Uri -like '*/tenantRelationships/*') {
         return $true
     }
-    $Tenant = Get-Tenants -TenantFilter $TenantID | Where-Object { $_.Excluded -eq $false }
-
-    if ($Tenant) {
+    $Tenants = Get-Tenants -IncludeErrors
+    $SkipList = Get-Tenants -SkipList
+    if (($env:PartnerTenantAvailable -eq $true -and $SkipList.customerId -notcontains $TenantID -and $SkipList.defaultDomainName -notcontains $TenantID) -or (($Tenants.customerId -contains $TenantID -or $Tenants.defaultDomainName -contains $TenantID) -and $TenantID -ne $env:TenantID)) {
         return $true
     } else {
         return $false

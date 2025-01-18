@@ -24,10 +24,9 @@ function New-CIPPBackup {
                 )
                 $CSVfile = foreach ($CSVTable in $BackupTables) {
                     $Table = Get-CippTable -tablename $CSVTable
-                    Get-AzDataTableEntity @Table | Select-Object * -ExcludeProperty DomainAnalyser, table, Timestamp, ETag | Select-Object *, @{l = 'table'; e = { $CSVTable } }
+                    Get-AzDataTableEntity @Table | Select-Object *, @{l = 'table'; e = { $CSVTable } } -ExcludeProperty DomainAnalyser
                 }
                 $RowKey = 'CIPPBackup' + '_' + (Get-Date).ToString('yyyy-MM-dd-HHmm')
-                $CSVfile
                 $CSVFile = [string]($CSVfile | ConvertTo-Json -Compress -Depth 100)
                 $entity = @{
                     PartitionKey = 'CIPPBackup'

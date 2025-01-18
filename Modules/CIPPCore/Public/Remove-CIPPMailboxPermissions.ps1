@@ -11,7 +11,7 @@ function Remove-CIPPMailboxPermissions {
 
     try {
         if ($userid -eq 'AllUsers') {
-            $Mailboxes = New-ExoRequest -tenantid $TenantFilter -cmdlet 'Get-Mailbox' -Select UserPrincipalName
+            $Mailboxes = New-ExoRequest -tenantid $TenantFilter -cmdlet 'get-mailbox'
             $Mailboxes | ForEach-Object -Parallel {
                 Import-Module '.\Modules\AzBobbyTables'
                 Import-Module '.\Modules\CIPPCore'
@@ -36,19 +36,7 @@ function Remove-CIPPMailboxPermissions {
                         }
                     }
                     'FullAccess' {
-                        $ExoRequest = @{
-                            tenantid  = $TenantFilter
-                            cmdlet    = 'Remove-MailboxPermission'
-                            cmdParams = @{
-                                Identity     = $userid
-                                user         = $AccessUser
-                                accessRights = @('FullAccess')
-                                Verbose      = $true
-                            }
-                            Anchor    = $userid
-                        }
-                        $permissions = New-ExoRequest @ExoRequest
-
+                        $permissions = New-ExoRequest -tenantid $TenantFilter -cmdlet 'Remove-MailboxPermission' -cmdParams @{Identity = $userid; user = $AccessUser; accessRights = @('FullAccess') } -Anchor $userid
                         if ($permissions -notlike "*because the ACE doesn't exist on the object.*") {
                             Write-LogMessage -user $ExecutingUser -API $APIName -message "Removed FullAccess permissions for $($AccessUser) from $($userid)'s mailbox." -Sev 'Info' -tenant $TenantFilter
                             "Removed FullAccess permissions for $($AccessUser) from $($userid)'s mailbox."

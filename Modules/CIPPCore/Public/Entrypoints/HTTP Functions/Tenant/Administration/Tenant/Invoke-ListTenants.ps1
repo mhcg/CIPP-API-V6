@@ -45,20 +45,7 @@ Function Invoke-ListTenants {
         return
     }
     if ($Request.Query.TriggerRefresh) {
-        if ($Request.Query.TenantFilter -and $Request.Query.TenantFilter -ne 'AllTenants') {
-            Get-Tenants -TriggerRefresh -TenantFilter $Request.Query.TenantFilter
-        } else {
-            $InputObject = [PSCustomObject]@{
-                Batch            = @(
-                    @{
-                        FunctionName = 'UpdateTenants'
-                    }
-                )
-                OrchestratorName = 'UpdateTenants'
-                SkipLog          = $true
-            }
-            Start-NewOrchestration -FunctionName 'CIPPOrchestrator' -InputObject ($InputObject | ConvertTo-Json -Compress -Depth 5)
-        }
+        Get-Tenants -IncludeAll -TriggerRefresh
     }
     try {
         $tenantfilter = $Request.Query.TenantFilter

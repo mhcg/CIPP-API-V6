@@ -41,21 +41,7 @@ Function Invoke-ExecIncidentsList {
             $Filter = "PartitionKey eq 'Incident'"
             $Rows = Get-CIPPAzDataTableEntity @Table -filter $Filter | Where-Object -Property Timestamp -GT (Get-Date).AddMinutes(-10)
             if (!$Rows) {
-                $TenantList = Get-Tenants -IncludeErrors
-                $Queue = New-CippQueueEntry -Name 'Incidents - All Tenants' -Link '/security/reports/incident-report?customerId=AllTenants' -TotalTasks ($TenantList | Measure-Object).Count
-                $InputObject = [PSCustomObject]@{
-                    OrchestratorName = 'IncidentOrchestrator'
-                    QueueFunction    = @{
-                        FunctionName    = 'GetTenants'
-                        TenantParams    = @{
-                            IncludeErrors = $true
-                        }
-                        QueueId         = $Queue.RowKey
-                        DurableFunction = 'ExecIncidentsListAllTenants'
-                    }
-                    SkipLog          = $true
-                }
-                Start-NewOrchestration -FunctionName 'CIPPOrchestrator' -InputObject ($InputObject | ConvertTo-Json -Depth 5 -Compress)
+                Push-OutputBinding -Name incidentqueue -Value (Get-Date).ToString()
                 [PSCustomObject]@{
                     Waiting = $true
                 }

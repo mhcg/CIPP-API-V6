@@ -5,7 +5,7 @@ Function Invoke-AddSiteBulk {
     .FUNCTIONALITY
         Entrypoint
     .ROLE
-        Sharepoint.Site.ReadWrite
+        Teams.Group.ReadWrite
     #>
     [CmdletBinding()]
     param($Request, $TriggerMetadata)
@@ -16,7 +16,7 @@ Function Invoke-AddSiteBulk {
 
     $Results = [System.Collections.ArrayList]@()
 
-    foreach ($sharepointObj in $Request.Body.bulkSites) {
+    foreach ($sharepointObj in $Request.body.BulkSite) {
         try {
             $SharePointSite = New-CIPPSharepointSite -SiteName $SharePointObj.siteName -SiteDescription $SharePointObj.siteDescription -SiteOwner $SharePointObj.siteOwner -TemplateName $SharePointObj.templateName -SiteDesign $SharePointObj.siteDesign -SensitivityLabel $SharePointObj.sensitivityLabel -TenantFilter $Request.body.TenantFilter
             $Results.add($SharePointSite)

@@ -8,8 +8,7 @@ function New-CIPPAPIConfig {
         $resetpassword
     )
     $null = Connect-AzAccount -Identity
-    $VaultName = ($ENV:WEBSITE_DEPLOYMENT_ID -split '-')[0]
-    $currentapp = (Get-AzKeyVaultSecret -VaultName $VaultName -Name 'CIPPAPIAPP' -AsPlainText)
+    $currentapp = (Get-AzKeyVaultSecret -VaultName $ENV:WEBSITE_DEPLOYMENT_ID -Name 'CIPPAPIAPP' -AsPlainText)
     $subscription = $($ENV:WEBSITE_OWNER_NAME).Split('+')[0]
 
     try {

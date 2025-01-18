@@ -1,8 +1,6 @@
 function Push-AuditLogBundleProcessing {
     Param($Item)
 
-    return # Disabled for now, as it's not used
-
     try {
         $AuditBundleTable = Get-CippTable -tablename 'AuditLogBundles'
         $AuditLogBundle = Get-CIPPAzDataTableEntity @AuditBundleTable -Filter "PartitionKey eq '$($Item.TenantFilter)' and RowKey eq '$($Item.ContentId)'"

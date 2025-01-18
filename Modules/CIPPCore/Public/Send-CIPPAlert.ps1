@@ -9,8 +9,7 @@ function Send-CIPPAlert {
         $TenantFilter,
         $APIName = 'Send Alert',
         $ExecutingUser,
-        $TableName,
-        $RowKey = [string][guid]::NewGuid()
+        $TableName
     )
     Write-Information 'Shipping Alert'
     $Table = Get-CIPPTable -TableName SchedulerConfig
@@ -35,16 +34,15 @@ function Send-CIPPAlert {
 
                 $JSONBody = ConvertTo-Json -Compress -Depth 10 -InputObject $PowerShellBody
                 if ($PSCmdlet.ShouldProcess($($Recipients.EmailAddress.Address -join ', '), 'Sending email')) {
-                    $null = New-GraphPostRequest -uri 'https://graph.microsoft.com/v1.0/me/sendMail' -tenantid $env:TenantID -NoAuthCheck $true -type POST -body ($JSONBody)
+                    New-GraphPostRequest -uri 'https://graph.microsoft.com/v1.0/me/sendMail' -tenantid $env:TenantID -NoAuthCheck $true -type POST -body ($JSONBody)
                 }
             }
-            Write-LogMessage -API 'Webhook Alerts' -message "Sent an email alert: $Title" -tenant $TenantFilter -sev info
-            return "Sent an email alert: $Title"
+            Write-LogMessage -API 'Webhook Alerts' -message "Sent a webhook alert to email: $Title" -tenant $TenantFilter -sev info
+
         } catch {
             $ErrorMessage = Get-CippException -Exception $_
             Write-Information "Could not send webhook alert to email: $($ErrorMessage.NormalizedError)"
             Write-LogMessage -API 'Webhook Alerts' -message "Could not send webhook alerts to email. $($ErrorMessage.NormalizedError)" -tenant $TenantFilter -sev Error -LogData $ErrorMessage
-            return "Could not send webhook alert to email: $($ErrorMessage.NormalizedError)"
         }
     }
 
@@ -54,7 +52,7 @@ function Send-CIPPAlert {
             $Table = Get-CIPPTable -TableName $TableName
             $Alert = @{
                 PartitionKey = $TenantFilter ?? 'Alert'
-                RowKey       = $RowKey
+                RowKey       = [string][guid]::NewGuid()
                 Title        = $Title
                 Data         = [string]$JSONContent
                 Tenant       = $TenantFilter

@@ -26,7 +26,7 @@
 if ($env:ExternalDurablePowerShellSDK -eq $true) {
     try {
         Import-Module AzureFunctions.PowerShell.Durable.SDK -ErrorAction Stop
-        Write-Information 'External Durable SDK enabled'
+        Write-Host 'External Durable SDK enabled'
     } catch {
         Write-LogMessage -message 'Failed to import module - AzureFunctions.PowerShell.Durable.SDK' -LogData (Get-CippException -Exception $_) -Sev 'debug'
         $_.Exception.Message
@@ -39,7 +39,7 @@ try {
 
 try {
     if (!$ENV:SetFromProfile) {
-        Write-Information "We're reloading from KV"
+        Write-Host "We're reloading from KV"
         $Auth = Get-CIPPAuthentication
     }
 } catch {
@@ -49,25 +49,20 @@ try {
 Set-Location -Path $PSScriptRoot
 $CurrentVersion = (Get-Content .\version_latest.txt).trim()
 $Table = Get-CippTable -tablename 'Version'
-Write-Information "Function: $($env:WEBSITE_SITE_NAME) Version: $CurrentVersion"
-$LastStartup = Get-CIPPAzDataTableEntity @Table -Filter "PartitionKey eq 'Version' and RowKey eq '$($env:WEBSITE_SITE_NAME)'"
-if (!$LastStartup -or $CurrentVersion -ne $LastStartup.Version) {
-    Write-Information "Version has changed from $($LastStartup.Version ?? 'None') to $CurrentVersion"
+$LastStartup = Get-CIPPAzDataTableEntity @Table -Filter "PartitionKey eq 'Version' and RowKey eq 'Version'"
+if ($CurrentVersion -ne $LastStartup.Version) {
+    Write-Host "Version has changed from $($LastStartup.Version) to $CurrentVersion"
+    Clear-CippDurables
     if ($LastStartup) {
         $LastStartup.Version = $CurrentVersion
     } else {
         $LastStartup = [PSCustomObject]@{
             PartitionKey = 'Version'
-            RowKey       = $env:WEBSITE_SITE_NAME
+            RowKey       = 'Version'
             Version      = $CurrentVersion
         }
     }
-    Update-AzDataTableEntity @Table -Entity $LastStartup -Force
-    try {
-        Clear-CippDurables
-    } catch {
-        Write-LogMessage -message 'Failed to clear durables after update' -LogData (Get-CippException -Exception $_) -Sev 'Error'
-    }
+    Update-AzDataTableEntity @Table -Entity $LastStartup
 }
 # Uncomment the next line to enable legacy AzureRm alias in Azure PowerShell.
 # Enable-AzureRmAlias

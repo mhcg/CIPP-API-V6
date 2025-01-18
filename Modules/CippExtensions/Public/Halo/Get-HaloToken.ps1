@@ -9,8 +9,7 @@ function Get-HaloToken {
             $Secret = (Get-CIPPAzDataTableEntity @DevSecretsTable -Filter "PartitionKey eq 'HaloPSA' and RowKey eq 'HaloPSA'").APIKey
         } else {
             $null = Connect-AzAccount -Identity
-            $VaultName = ($ENV:WEBSITE_DEPLOYMENT_ID -split '-')[0]
-            $Secret = Get-AzKeyVaultSecret -VaultName $VaultName -Name 'HaloPSA' -AsPlainText
+            $Secret = Get-AzKeyVaultSecret -VaultName $ENV:WEBSITE_DEPLOYMENT_ID -Name 'HaloPSA' -AsPlainText
         }
         $body = @{
             grant_type    = 'client_credentials'

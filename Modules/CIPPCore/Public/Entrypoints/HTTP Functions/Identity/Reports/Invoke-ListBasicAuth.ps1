@@ -45,22 +45,7 @@ Function Invoke-ListBasicAuth {
         $Table = Get-CIPPTable -TableName cachebasicauth
         $Rows = Get-CIPPAzDataTableEntity @Table | Where-Object -Property Timestamp -GT (Get-Date).AddHours(-1)
         if (!$Rows) {
-            $TenantList = Get-Tenants -IncludeErrors
-            $Queue = New-CippQueueEntry -Name 'Basic Auth - All Tenants' -TotalTasks ($TenantList | Measure-Object).Count
-            $InputObject = [PSCustomObject]@{
-                OrchestratorName = 'BasicAuthOrchestrator'
-                QueueFunction    = @{
-                    FunctionName    = 'GetTenants'
-                    TenantParams    = @{
-                        IncludeErrors = $true
-                    }
-                    QueueId         = $Queue.RowKey
-                    DurableFunction = 'ListBasicAuthAllTenants'
-                }
-                SkipLog          = $true
-            }
-            Start-NewOrchestration -FunctionName 'CIPPOrchestrator' -InputObject ($InputObject | ConvertTo-Json -Depth 5 -Compress)
-
+            Push-OutputBinding -Name Msg -Value (Get-Date).ToString()
             $GraphRequest = [PSCustomObject]@{
                 Tenant = 'Loading data for all tenants. Please check back in 10 minutes'
             }

@@ -35,12 +35,11 @@ function Get-CIPPAuditLogContentBundles {
         throw 'AllTenants is not a valid tenant filter for webhooks'
     }
 
-    $Tenant = Get-Tenants -TenantFilter $TenantFilter -IncludeErrors
     if (!($TenantFilter -match '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')) {
         $DefaultDomainName = $TenantFilter
-        $TenantFilter = $Tenant.customerId
+        $TenantFilter = (Get-Tenants | Where-Object { $_.defaultDomainName -eq $TenantFilter }).customerId
     } else {
-        $DefaultDomainName = $Tenant.defaultDomainName
+        $DefaultDomainName = (Get-Tenants | Where-Object { $_.customerId -eq $TenantFilter }).defaultDomainName
     }
 
     $WebhookTable = Get-CippTable -tablename 'webhookTable'

@@ -18,9 +18,7 @@ function Get-CIPPAlertQuotaUsed {
     }
     $OverQuota = $AlertData | ForEach-Object {
         if ($_.StorageUsedInBytes -eq 0 -or $_.prohibitSendReceiveQuotaInBytes -eq 0) { return }
-        try {
-            $PercentLeft = [math]::round(($_.storageUsedInBytes / $_.prohibitSendReceiveQuotaInBytes) * 100)
-        } catch { $PercentLeft = 100 }
+        $PercentLeft = [math]::round(($_.storageUsedInBytes / $_.prohibitSendReceiveQuotaInBytes) * 100)
         try {
             if ([int]$InputValue -gt 0) {
                 $Value = [int]$InputValue

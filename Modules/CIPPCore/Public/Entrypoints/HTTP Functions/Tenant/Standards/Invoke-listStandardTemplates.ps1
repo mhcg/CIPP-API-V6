@@ -10,23 +10,16 @@ Function Invoke-listStandardTemplates {
     [CmdletBinding()]
     param($Request, $TriggerMetadata)
 
-    $Table = Get-CippTable -tablename 'templates'
-    $Filter = "PartitionKey eq 'StandardsTemplateV2'"
-    $Templates = (Get-CIPPAzDataTableEntity @Table -Filter $Filter) | ForEach-Object {
-        $JSON = $_.JSON
-        try {
-            $data = $_.JSON | ConvertFrom-Json -Depth 100 -ErrorAction SilentlyContinue
-        } catch {
-            Write-Host "Could not load standard template: $($_.Exception.Message). Content of the template is: $($JSON)."
-            Write-Host "Template GUID: $($_.GUID)"
-            return
-        }
-        $data | Add-Member -NotePropertyName 'GUID' -NotePropertyValue $_.GUID -Force
-        if ($data.excludedTenants) { $data.excludedTenants = @($data.excludedTenants) }
-        $data
-    } | Sort-Object -Property templateName
+    $APIName = $TriggerMetadata.FunctionName
 
-    if ($Request.query.id) { $Templates = $Templates | Where-Object GUID -EQ $Request.query.id }
+    $Table = Get-CippTable -tablename 'templates'
+    $Filter = "PartitionKey eq 'StandardsTemplate'"
+    $Templates = (Get-CIPPAzDataTableEntity @Table -Filter $Filter) | ForEach-Object {
+        $data = $_.JSON | ConvertFrom-Json -Depth 100
+        $data | Add-Member -NotePropertyName 'GUID' -NotePropertyValue $_.GUID -Force
+        $data
+    } | Sort-Object -Property displayName
+
     # Associate values to output bindings by calling 'Push-OutputBinding'.
     Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
             StatusCode = [HttpStatusCode]::OK
